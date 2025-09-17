@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Category list</title>
+</head>
+<body>
+
+<form action="/category" method="post">
+    <label for="category_name">category_name:</label><br>
+    <input type="category_name" id="category_name" name="category_name"><br><br>
+    <input type = "submit" value="Submit">
+</form>
+{% for one_cat in categories %}
+
+        <p><a href = "/category/{{ one_cat.id }}">{{ one_cat.category_name }}</a> {% if one_cat.owner != 1 %}<a href="/category/{{ one_cat.id }}/delete"> delete</a></p>
+    {% endif %}
+{% endfor %}
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>
+        {% if page_type == "income" %}
+            User Incomes
+        {% elif page_type == "spend" %}
+            User Expenses
+        {% endif %}
+    </h1>
+
+    <form action="/{{ page_type }}" method="post">
+        <label for="description">Description:</label><br>
+        <input type="text" id="description" name="description" required><br><br>
+
+        <label for="amount">Amount:</label><br>
+        <input type="number" id="amount" name="amount" step="0.01" required><br><br>
+
+        <label for="date">Date:</label><br>
+        <input type="date" id="date" name="date" required><br><br>
+
+        <label for="category">Choose the category:</label>
+        <select name="category" id="category">
+        {% for one_category in categories %}
+            <option value="{{ one_category.id }}">{{ one_category.category_name }}</option>
+        {% endfor %}
+        </select>
+        <br><br>
+        <input type="submit" value="Add Transaction">
+    </form>
+
+    <h2>Transactions</h2>
+{% if transactions %}
+    <ul>
+        {% for transaction, category_name in transactions %}
+    <li>
+        {{ transaction.description }} -
+        {{ transaction.amount }} -
+        {{ transaction.date }} -
+        **Category: {{ category_name }}**
+    </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No transactions found for this type.</p>
+{% endif %}
+</body>
+</html>
