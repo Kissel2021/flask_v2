@@ -16,12 +16,56 @@ init_db()
 
 
 # /user
-@app.route('/user', methods=['GET', 'DELETE'])
+@app.route('/user', methods=['GET'])
 def user_handler():
-    if request.method == 'GET':
-        return "Привет, Flask работает!"
-    else:
-        return 'привет'
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+
+    query = select(models.Transaction).filter_by(owner_id=session['user_id'])
+
+    if date_from:
+        query = query.filter(models.Transaction.date >= datetime.strptime(date_from, '%Y-%m-%d'))
+    if date_to:
+        query = query.filter(models.Transaction.date <= datetime.strptime(date_to, '%Y-%m-%d'))
+
+    transactions = db_session.execute(
+        query.join(models.Category, models.Transaction.category_id == models.Category.id)
+             .options(selectinload(models.Transaction.category))
+    ).scalars().all()
+
+    chart_data = {}
+    for t in transactions:
+        date_str = t.date.strftime("%Y-%m-%d")
+        if date_str not in chart_data:
+            chart_data[date_str] = {"income": 0, "spend": 0}
+
+        if t.category_type == INCOME:
+            chart_data[date_str]["income"] += t.amount
+        else:
+            chart_data[date_str]["spend"] += t.amount
+
+    labels = list(chart_data.keys())
+    incomes = [chart_data[d]["income"] for d in labels]
+    spends = [chart_data[d]["spend"] for d in labels]
+
+    return render_template(
+        "user_dashboard.html",
+        transactions=transactions,
+        date_from=date_from,
+        date_to=date_to,
+        labels=labels,
+        incomes=incomes,
+        spends=spends
+    )
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
 
 
 # /login
@@ -32,12 +76,16 @@ def get_login():
     else:
         email = request.form['email']
         password = request.form['password']
-        data = db_session.execute(select(models.User).filter_by(email=email, password=password)).scalars().first()
-        if data:
-            session['user_id'] = data.id
-            return f"correct user pair"
+        user = db_session.execute(
+            select(models.User).filter_by(email=email, password=password)
+        ).scalar_one_or_none()
+
+        if user:
+            session['user_id'] = user.id
+            return redirect('/user')
         else:
-            return f" wrong user pair"
+            error_message = "Неверный email или пароль."
+            return render_template("login.html", error=error_message)
 
 
 # /register
@@ -50,6 +98,14 @@ def get_register():
         surname = request.form['surname']
         password = request.form['password']
         email = request.form['email']
+
+        existing_user = db_session.execute(
+            select(models.User).filter_by(email=email)
+        ).scalar_one_or_none()
+
+        if existing_user:
+            return "Пользователь с таким email уже зарегистрирован", 400
+
         new_user = models.User(name=name, surname=surname, password=password, email=email)
         db_session.add(new_user)
         db_session.commit()
@@ -141,7 +197,7 @@ def get_income():
                 models.Transaction.owner_id == session['user_id'],
                 models.Transaction.category_type == INCOME
             )
-        ).all() # Use .all() to get a list of tuples
+        ).all()
 
         categories = list(db_session.execute(
             select(models.Category).filter(
@@ -168,10 +224,24 @@ def get_income():
 
 
 # /income/<income_id>
-@app.route('/income/<income_id>', methods=['GET', 'PATCH', 'DELETE'])
+@app.route('/income/<int:income_id>', methods=['GET', 'POST', 'DELETE'])
 def income_detail(income_id):
+    transaction = db_session.get(models.Transaction, income_id)
+    if not transaction or transaction.owner_id != session.get('user_id'):
+        return "Транзакция не найдена", 404
+
     if request.method == 'GET':
-        return f" 22, {income_id}"
+        return render_template("transaction.html", transaction=transaction)
+    elif request.method == 'POST':
+        transaction.description = request.form['description']
+        transaction.amount = float(request.form['amount'])
+        transaction.date = datetime.strptime(request.form['date'], '%Y-%m-%d')
+        db_session.commit()
+        return redirect('/income')
+    elif request.method == 'DELETE':
+        db_session.delete(transaction)
+        db_session.commit()
+        return redirect('/income')
 
 
 @app.route('/spend', methods=['GET', 'POST'])
@@ -190,7 +260,7 @@ def get_spend():
                 models.Transaction.owner_id == session['user_id'],
                 models.Transaction.category_type == SPEND
             )
-        ).all() # Use .all() to get a list of tuples
+        ).all()
 
         categories = list(db_session.execute(
             select(models.Category).filter(
@@ -217,9 +287,24 @@ def get_spend():
 
 
 # /spend/<spend_id>
-@app.route('/spend/<spend_id>', methods=['GET', 'PATCH', 'DELETE'])
-def spend_detail(spend_id):
-    return f" 22, {spend_id}"
+@app.route('/spend/<int:spend_id>', methods=['GET', 'POST', 'DELETE'])
+def spend_detail(income_id):
+    transaction = db_session.get(models.Transaction, income_id)
+    if not transaction or transaction.owner_id != session.get('user_id'):
+        return "Транзакция не найдена", 404
+
+    if request.method == 'GET':
+        return render_template("transaction.html", transaction=transaction)
+    elif request.method == 'POST':
+        transaction.description = request.form['description']
+        transaction.amount = float(request.form['amount'])
+        transaction.date = datetime.strptime(request.form['date'], '%Y-%m-%d')
+        db_session.commit()
+        return redirect('/spend')
+    elif request.method == 'DELETE':
+        db_session.delete(transaction)
+        db_session.commit()
+        return redirect('/spend')
 
 
 @app.teardown_appcontext

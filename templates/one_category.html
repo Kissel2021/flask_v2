@@ -20,7 +20,7 @@
     {% endif %}
 
     <h2>Transactions in this Category</h2>
-    {# Вам нужно будет передавать список транзакций для этой категории #}
+
     {% if transactions %}
         {% for one_transaction in transactions %}
             <p>{{ one_transaction.description }} - {{ one_transaction.amount }}</p>

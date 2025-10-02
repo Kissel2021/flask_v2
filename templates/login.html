@@ -4,12 +4,19 @@
     <title>login</title>
 </head>
 <body>
-<form action="/login" method="POST">
-  <label for="email">email:</label><br>
-  <input type="text" id="email" name="email"><br>
-  <label for="password">password:</label><br>
-  <input type="password" id="password" name="password"><br><br>
-  <input type="submit" value="Submit">
-</form>
+{% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST">
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="password">Пароль:</label><br>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <input type="submit" value="Войти">
+    </form>
+
 </body>
 </html>

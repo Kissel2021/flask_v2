@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Личный кабинет</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>Ваши транзакции</h1>
+        <a href="{{ url_for('logout') }}"
+           style="padding: 8px 12px; background: #f44336; color: white; text-decoration: none; border-radius: 5px;">
+           Выйти
+        </a>
+    </div>
+
+    <form method="get" action="{{ url_for('user_handler') }}">
+        <label>С:
+            <input type="date" name="date_from" value="{{ date_from or '' }}">
+        </label>
+        <label>По:
+            <input type="date" name="date_to" value="{{ date_to or '' }}">
+        </label>
+        <button type="submit">Фильтровать</button>
+    </form>
+
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>Дата</th>
+            <th>Описание</th>
+            <th>Категория</th>
+            <th>Сумма</th>
+            <th>Тип</th>
+        </tr>
+        {% for t in transactions %}
+        <tr>
+            <td>{{ t.date.strftime("%Y-%m-%d") }}</td>
+            <td>{{ t.description }}</td>
+            <td>{{ t.category.category_name }}</td>
+            <td>{{ t.amount }}</td>
+            <td>
+                {% if t.category_type == 1 %}
+                    Расход
+                {% else %}
+                    Доход
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5">Нет транзакций за выбранный период</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>График доходов и расходов</h2>
+    <canvas id="financeChart"></canvas>
+
+    <script>
+        const ctx = document.getElementById('financeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ labels|tojson }},
+                datasets: [
+                    {
+                        label: 'Доходы',
+                        data: {{ incomes|tojson }},
+                        borderColor: 'green',
+                        fill: false
+                    },
+                    {
+                        label: 'Расходы',
+                        data: {{ spends|tojson }},
+                        borderColor: 'red',
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

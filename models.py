@@ -10,8 +10,6 @@ class User(Base):
     surname = Column(String(50))
     password = Column(String(50))
     email = Column(String(30), unique=True)
-    birth_date = Column(DateTime)
-    country = Column(String(50))
 
 
 class Category(Base):
