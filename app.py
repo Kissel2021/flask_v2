@@ -288,8 +288,8 @@ def get_spend():
 
 # /spend/<spend_id>
 @app.route('/spend/<int:spend_id>', methods=['GET', 'POST', 'DELETE'])
-def spend_detail(income_id):
-    transaction = db_session.get(models.Transaction, income_id)
+def spend_detail(spend_id):
+    transaction = db_session.get(models.Transaction, spend_id)
     if not transaction or transaction.owner_id != session.get('user_id'):
         return "Транзакция не найдена", 404
 

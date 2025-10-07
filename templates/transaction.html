@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактирование транзакции</title>
+</head>
+<body>
+    <h1>Редактировать транзакцию</h1>
+
+    <form method="post">
+        <label>Описание:</label><br>
+        <input type="text" name="description" value="{{ transaction.description }}"><br><br>
+
+        <label>Сумма:</label><br>
+        <input type="number" name="amount" step="0.01" value="{{ transaction.amount }}"><br><br>
+
+        <label>Дата:</label><br>
+        <input type="date" name="date" value="{{ transaction.date.strftime('%Y-%m-%d') }}"><br><br>
+
+        <button type="submit">Сохранить изменения</button>
+    </form>
+
+    <form method="post" action="{{ url_for('spend_detail', spend_id=transaction.id) }}" onsubmit="return confirm('Удалить транзакцию?');">
+        <input type="hidden" name="_method" value="DELETE">
+        <button type="submit">Удалить</button>
+    </form>
+
+    <a href="/spend">← Назад</a>
+</body>
+</html>
